@@ -1,8 +1,66 @@
-from django.urls import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
-from django.contrib.auth.models import User
+from rest_framework.test import APITestCase, APIClient
 from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
+from rest_framework import status
+from django.urls import reverse
+
+
+class UserTests(APITestCase):
+
+    def setUp(self):
+        # Create two users for testing
+        self.user1 = User.objects.create_user(username="user1", password="password123")
+        self.user2 = User.objects.create_user(username="user2", password="password123")
+        self.client = APIClient()
+
+    def test_get_all_users(self):
+        # Authenticate and request all users
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(reverse('UserList'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_get_single_user(self):
+        # Authenticate and request single user (user1)
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(reverse('UserDetailUpdateDelete', args=[self.user1.pk]))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.user1.pk)
+
+    def test_update_user(self):
+        # Authenticate as user1 and update user1's data
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.put(reverse('UserDetailUpdateDelete', args=[self.user1.pk]), 
+                                    {'username': 'updated_user1'}, 
+                                    format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user1.refresh_from_db()
+        self.assertEqual(self.user1.username, 'updated_user1')
+
+    def test_update_user_not_owner(self):
+        # Authenticate as user2 and try to update user1's data (should fail)
+        self.client.force_authenticate(user=self.user2)
+        response = self.client.put(reverse('UserDetailUpdateDelete', args=[self.user1.pk]), 
+                                    {'username': 'fail_update'}, 
+                                    format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_delete_user(self):
+        # Authenticate as user1 and delete user1
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.delete(reverse('UserDetailUpdateDelete', args=[self.user1.pk]))
+        
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_user_not_owner(self):
+        # Authenticate as user2 and try to delete user1 (should fail)
+        self.client.force_authenticate(user=self.user2)
+        response = self.client.delete(reverse('UserDetailUpdateDelete', args=[self.user1.pk]))
+        
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class AuthenticationTests(APITestCase):
