@@ -6,8 +6,8 @@ urlpatterns = [
     path('login/', login, name="Login"),
     path('signup/', signup, name="Signup"),
 
-    # For GET (all users)
+    # Method: GET (all users)
     path('', UserView.as_view(), name="UserList"),
-    # For GET (single user), PUT (update), DELETE (remove user)
+    # Methods: GET (single user), PUT (update), DELETE (remove user)
     path('<int:pk>/', UserView.as_view(), name="UserDetailUpdateDelete"),
 ]
