@@ -1,11 +1,18 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from .models import Vehicle
+from .models import Vehicle, VehicleImage
 from django.contrib.auth.models import User
+import os, glob
 
 
 class VehicleViewTests(APITestCase):
+    
+    """
+    Test Vehicle API
+    ================
+    """
+
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpass')
 
@@ -22,6 +29,23 @@ class VehicleViewTests(APITestCase):
             transmission='Automatic'
         )
 
+        # Authentication is needed to create the test image, but we must unauthenticate afterward.
+        self.client.force_authenticate(user=self.user)
+        url = reverse('VehicleImageCreate')
+        with open('./media/vehicle_images/test_car.png', 'rb') as img:
+            response = self.client.post(url, {'vehicle': self.vehicle.id, 'image': img}, format='multipart')
+
+        self.img_response = response
+        self.client.force_authenticate(user=None)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Delete all images except 'test_img.png' in the specified directory after all tests are done
+        image_files = glob.glob("./media/vehicle_images/*.png")
+        for file in image_files:
+            if not file.endswith("test_car.png"):
+                os.remove(file)
+
     def test_get_all_vehicles(self):
         response = self.client.get(reverse('VehicleList'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -33,12 +57,13 @@ class VehicleViewTests(APITestCase):
         self.assertEqual(response.data['id'], self.vehicle.id)
 
     def test_create_vehicle(self):
+        # Create a new vehicle
         data = {
-            'make': 'Honda',
-            'model': 'Civic',
-            'year': 2021,
+            'make': 'Mercedes-Benz',
+            'model': 'A-Class',
+            'year': 2019,
             'price': 22000.00,
-            'mileage': 12000,
+            'mileage': 120000,
             'color': 'Blue',
             'fuel_type': 'Petrol',
             'transmission': 'Manual'
@@ -89,4 +114,55 @@ class VehicleViewTests(APITestCase):
         self.client.force_authenticate(user=other_user)
         
         response = self.client.delete(reverse('VehicleDetailUpdateDelete', args=[self.vehicle.id]))
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+    """
+    Test Vehicle Image API
+    ======================
+    To proceed you need to have /media/vehicle_images/test_car.png
+    """
+
+    def test_create_image(self):
+        self.client.force_authenticate(user=self.user)
+        # Test creating an image
+        url = reverse('VehicleImageCreate')
+        with open('./media/vehicle_images/test_car.png', 'rb') as img:  # Use a valid image path
+            response = self.client.post(url, {'vehicle': self.vehicle.id, 'image': img}, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('image', response.data)
+
+    def test_create_image_unauthorized(self):
+        # Test creating an image
+        url = reverse('VehicleImageCreate')
+        with open('./media/vehicle_images/test_car.png', 'rb') as img:  # Use a valid image path
+            response = self.client.post(url, {'vehicle': self.vehicle.id, 'image': img}, format='multipart')
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_image_not_vehicle_owner(self):
+        other_user = User.objects.create_user(username='otheruser', password='otherpass')
+        self.client.force_authenticate(user=other_user)
+        # Test creating an image
+        url = reverse('VehicleImageCreate')
+        with open('./media/vehicle_images/test_car.png', 'rb') as img:  # Use a valid image path
+            response = self.client.post(url, {'vehicle': self.vehicle.id, 'image': img}, format='multipart')
+        
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_delete_image(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.delete(reverse('VehicleImageDelete', args=[self.img_response.data['id']]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_image_unauthorized(self):
+        response = self.client.delete(reverse('VehicleImageDelete', args=[self.img_response.data['id']]))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_image_not_vehicle_owner(self):        
+        other_user = User.objects.create_user(username='otheruser', password='otherpass')
+        self.client.force_authenticate(user=other_user)
+
+        response = self.client.delete(reverse('VehicleImageDelete', args=[self.img_response.data['id']]))
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
