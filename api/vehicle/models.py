@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 
 class Vehicle(models.Model):
@@ -17,3 +18,9 @@ class Vehicle(models.Model):
 
     def __str__(self):
         return f"{self.make} {self.model}"
+
+
+class VehicleImage(models.Model):
+    vehicle = models.ForeignKey(Vehicle, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='vehicle_images/')
+    created_at = models.DateTimeField(auto_now_add=True)

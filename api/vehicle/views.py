@@ -3,9 +3,9 @@ from rest_framework.decorators import permission_classes
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import VehicleSerializer
+from .serializers import VehicleSerializer, VehicleImageSerializer
 from rest_framework import status
-from .models import Vehicle
+from .models import Vehicle, VehicleImage
 
 
 """
@@ -13,6 +13,8 @@ Vehicle Operations
 ==================
 
 This code manages vehicle data, allowing you to read, create, update, and delete vehicles.
+Only the owner is allowed to make changes or delete the vehicle.
+Anyone can get all or a single vehicle, no authentication needed for that.
 """
 
 class VehicleView(APIView):
@@ -68,3 +70,42 @@ class VehicleView(APIView):
         # If the request user is the owner, allow the vehicle to be deleted
         vehicle.delete()
         return Response("Vehicle has been deleted!", status=status.HTTP_204_NO_CONTENT)
+
+
+"""
+Vehicle Image
+=============
+
+This code manages vehicle image data, allowing to create or delete vehicle image.
+Only the owner is allowed to execute.
+"""
+
+class VehicleImageView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):     
+        # Images can only be added to a vehicle after the vehicle has been created
+        vehicle = get_object_or_404(Vehicle, id=request.data["vehicle"])
+
+        # Apply ownership check
+        if request.user.pk != vehicle.owner.pk:
+            return Response("Not allowed!", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        
+        serializer = VehicleImageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        # To proceed the request user has to be the vehicle owner
+        # Check if vehicle image exists
+        vehicle_image = get_object_or_404(VehicleImage, id=pk)
+        # Get vehicle because we need owner pk 
+        vehicle = get_object_or_404(Vehicle, id=vehicle_image.vehicle.pk)
+
+        # Apply ownership check
+        if request.user.pk != vehicle.owner.pk:
+            return Response("Not allowed!", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        
+        # If the request user is the owner, allow the vehicle to be deleted
+        vehicle_image.delete()
+        return Response("Vehicle image has been deleted!", status=status.HTTP_204_NO_CONTENT)
