@@ -21,6 +21,21 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = ["id", "make", "model", "year", "price", "mileage", "color", "fuel_type", 
                   "transmission", "description", "created_at", "owner", "images"]
+        
+    def validate(self, attrs):
+        # Convert string fields to uppercase
+        if 'make' in attrs:
+            attrs['make'] = attrs['make'].upper()
+        if 'model' in attrs:
+            attrs['model'] = attrs['model'].upper()
+        if 'color' in attrs:
+            attrs['color'] = attrs['color'].upper()
+        if 'fuel_type' in attrs:
+            attrs['fuel_type'] = attrs['fuel_type'].upper()
+        if 'transmission' in attrs:
+            attrs['transmission'] = attrs['transmission'].upper()
+        
+        return attrs
 
     def update(self, instance, validated_data):
         # Raise an exception if attempting to update the owner
@@ -28,3 +43,15 @@ class VehicleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Owner field cannot be updated.")
 
         return super().update(instance, validated_data)
+
+
+class VehicleMakeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['make']
+
+
+class VehicleModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['model']

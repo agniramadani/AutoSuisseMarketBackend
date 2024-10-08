@@ -1,9 +1,9 @@
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import permission_classes, api_view
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import VehicleSerializer, VehicleImageSerializer
+from .serializers import *
 from rest_framework import status
 from .models import Vehicle, VehicleImage
 
@@ -109,3 +109,30 @@ class VehicleImageView(APIView):
         # If the request user is the owner, allow the vehicle to be deleted
         vehicle_image.delete()
         return Response("Vehicle image has been deleted!", status=status.HTTP_204_NO_CONTENT)
+
+
+"""
+Vehicle Search
+==============
+
+# This code helps search for vehicle makes, models, and filters by year and price.
+"""
+
+@api_view(["GET"])
+def get_vehicle_makes(request):
+    queryset = Vehicle.objects.values('make').distinct().order_by('make')
+    serializer = VehicleMakeSerializer(queryset, many=True)
+    
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+def get_vehicle_models(request, requested_make):
+    # Convert the make to uppercase since all makes are saved in uppercase.
+    requested_make = requested_make.upper()
+    queryset = Vehicle.objects.filter(make=requested_make).values("model").distinct().order_by("model")
+    serializer = VehicleModelSerializer(queryset, many=True)
+
+    if not queryset.exists():
+        return Response("No models found for the specified make.", status=status.HTTP_404_NOT_FOUND)
+    
+    return Response(serializer.data, status=status.HTTP_200_OK)

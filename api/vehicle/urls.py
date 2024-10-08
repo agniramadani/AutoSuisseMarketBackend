@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import VehicleView, VehicleImageView
+from .views import VehicleView, VehicleImageView, get_vehicle_makes, get_vehicle_models
 
 urlpatterns = [
     # Methods: GET (all vehicles), Post (create)
@@ -11,4 +11,8 @@ urlpatterns = [
     path('image/', VehicleImageView.as_view(), name="VehicleImageCreate"),
     # Method: DELETE (remove vehicle image)
     path('image/<int:pk>/', VehicleImageView.as_view(), name="VehicleImageDelete"),
+
+    # Method: Get (Vehicles make, model, filter by year or price)
+    path('make/', get_vehicle_makes, name='GetVehicleMakes'),
+    path('model/<str:requested_make>/', get_vehicle_models, name='GetVehicleModels'),
 ]

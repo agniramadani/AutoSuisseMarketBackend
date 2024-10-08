@@ -19,8 +19,8 @@ class VehicleViewTests(APITestCase):
         # Create a Mercedes-Benz vehicle for testing
         self.vehicle = Vehicle.objects.create(
             owner=self.user,
-            make='Mercedes-Benz',
-            model='C-Class',
+            make='MERCEDES-BENZ',
+            model='C-CLASS',
             year=2022,
             price=35000.00,
             mileage=15000,
@@ -59,8 +59,8 @@ class VehicleViewTests(APITestCase):
     def test_create_vehicle(self):
         # Create a new vehicle
         data = {
-            'make': 'Mercedes-Benz',
-            'model': 'A-Class',
+            'make': 'MERCEDES_BENZ',
+            'model': 'A-CLASS',
             'year': 2019,
             'price': 22000.00,
             'mileage': 120000,
@@ -75,14 +75,14 @@ class VehicleViewTests(APITestCase):
 
     def test_update_vehicle(self):
         data = {
-            'model': 'E-Class',
+            'model': 'E-CLASS',
             'price': 36000.00,
         }
         self.client.force_authenticate(user=self.user)
         response = self.client.put(reverse('VehicleDetailUpdateDelete', args=[self.vehicle.id]), data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.vehicle.refresh_from_db()
-        self.assertEqual(self.vehicle.model, 'E-Class')
+        self.assertEqual(self.vehicle.model, 'E-CLASS')
         self.assertEqual(self.vehicle.price, 36000.00)
 
     def test_update_vehicle_owner(self):
@@ -98,7 +98,7 @@ class VehicleViewTests(APITestCase):
         self.client.force_authenticate(user=other_user)
         
         data = {
-            'model': 'A-Class',
+            'model': 'A-CLASS',
         }
         response = self.client.put(reverse('VehicleDetailUpdateDelete', args=[self.vehicle.id]), data)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -166,3 +166,23 @@ class VehicleViewTests(APITestCase):
 
         response = self.client.delete(reverse('VehicleImageDelete', args=[self.img_response.data['id']]))
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+    """
+    Test Vehicle Search
+    ===================
+    """
+
+    def test_get_all_vehicle_makes(self):
+        response = self.client.get(reverse('GetVehicleMakes'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_vehicle_models_invalid_make(self):
+        response = self.client.get(reverse('GetVehicleModels', kwargs={'requested_make': 'INVALID_MAKE'}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_vehicle_models_valid_make(self):
+        response = self.client.get(reverse('GetVehicleModels', kwargs={'requested_make': 'MERCEDES-BENZ'}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['model'], 'C-CLASS') 
