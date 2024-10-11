@@ -173,6 +173,36 @@ class VehicleViewTests(APITestCase):
     ===================
     """
 
+    def test_get_vehicle_by_make(self):
+        response = self.client.get(reverse('SearchVehicle'), {'make': 'MERCEDES-BENZ'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.vehicle.id)
+
+    def test_get_vehicle_by_model(self):
+        response = self.client.get(reverse('SearchVehicle'), {'model': 'C-CLASS'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.vehicle.id)
+
+    def test_get_vehicle_by_year(self):
+        response = self.client.get(reverse('SearchVehicle'), {'year': 2022})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.vehicle.id)
+
+    def test_get_vehicle_by_price(self):
+        response = self.client.get(reverse('SearchVehicle'), {'price': 35000})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.vehicle.id)
+
+    def test_get_vehicle_no_filters(self):
+        response = self.client.get(reverse('SearchVehicle'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.vehicle.id)
+
     def test_get_all_vehicle_makes(self):
         response = self.client.get(reverse('GetVehicleMakes'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -116,7 +116,40 @@ Vehicle Search
 ==============
 
 # This code helps search for vehicle makes, models, and filters by year and price.
+# No authentication is needed!
 """
+
+@api_view(["GET"])
+def get_vehicle_by_query(request):
+    make = request.query_params.get('make', None)
+    model = request.query_params.get('model', None)
+    year = request.query_params.get('year', None)
+    price = request.query_params.get('price', None)
+
+    # Start with all vehicles
+    queryset = Vehicle.objects.all()
+
+    # Filter by make if provided
+    if make:
+        queryset = queryset.filter(make__iexact=make)
+
+    # Filter by model if provided
+    if model:
+        queryset = queryset.filter(model__iexact=model)
+
+    # Filter by year (from that year onwards) if provided
+    if year:
+        queryset = queryset.filter(year__gte=year)
+
+    # Filter by price (from that price onwards) if provided
+    if price:
+        queryset = queryset.filter(price__gte=price)
+
+    # Finally sort by lowest price
+    queryset = queryset.order_by('price')
+
+    serializer = VehicleSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
 def get_vehicle_makes(request):
