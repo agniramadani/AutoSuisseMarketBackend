@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Vehicle, VehicleImage
-
+from user.serializers import UserSerializer
 
 class VehicleImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,6 +43,15 @@ class VehicleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Owner field cannot be updated.")
 
         return super().update(instance, validated_data)
+
+
+class VehicleDetailSerializer(serializers.ModelSerializer):
+    images = VehicleImageSerializer(many=True, read_only=True)
+    owner = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Vehicle
+        fields = "__all__"
 
 
 class VehicleMakeSerializer(serializers.ModelSerializer):

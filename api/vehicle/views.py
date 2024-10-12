@@ -29,7 +29,7 @@ class VehicleView(APIView):
     def get(self, request, pk=None):
         if pk:
             vehicle = get_object_or_404(Vehicle, id=pk)
-            serializer = VehicleSerializer(vehicle)
+            serializer = VehicleDetailSerializer(vehicle)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             queryset = Vehicle.objects.all()
